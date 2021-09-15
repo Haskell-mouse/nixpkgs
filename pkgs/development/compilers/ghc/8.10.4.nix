@@ -7,6 +7,11 @@
 
 , libiconv ? null, ncurses
 
+, sources ? (fetchurl {
+    url = "https://downloads.haskell.org/ghc/${version}/ghc-${version}-src.tar.xz";
+    sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
+  })
+
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
