@@ -8,7 +8,7 @@
 , libiconv ? null, ncurses
 
 , sources ? (fetchurl {
-    url = "https://downloads.haskell.org/ghc/${version}/ghc-${version}-src.tar.xz";
+    url = "https://downloads.haskell.org/ghc/8.10.4/ghc-8.10.4-src.tar.xz";
     sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
   })
 
