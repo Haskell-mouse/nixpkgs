@@ -7,10 +7,12 @@
 
 , libiconv ? null, ncurses
 
-, sources ? (fetchurl {
-    url = "https://downloads.haskell.org/ghc/8.10.4/ghc-8.10.4-src.tar.xz";
-    sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
-  })
+, sources ? (builtins.fetchGit { 
+      submodules = true;
+      url = https://gitlab.haskell.org/Haskell-mouse/ghc;
+      rev = "667bde303c83572d963820c9322638411e4de7dc";
+      allRefs = true;
+    })
 
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
