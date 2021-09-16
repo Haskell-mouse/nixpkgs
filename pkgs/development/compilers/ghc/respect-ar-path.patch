@@ -11,15 +11,4 @@ diff -urd a/aclocal.m4 b/aclocal.m4
    if test "$HostOS" = "mingw32"
    then
      AC_PATH_PROG([fp_prog_ar], [ar])
-diff -urd a/configure b/configure
---- a/configure
-+++ b/configure
-@@ -10744,6 +10744,8 @@
- test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
- 
- 
-+fp_prog_ar=$AR
-+
- if test -z "$fp_prog_ar"; then
-   if test "$HostOS" = "mingw32"
-   then
+

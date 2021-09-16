@@ -7,6 +7,12 @@
 , bash
 
 , libiconv ? null, ncurses
+, sources ? (builtins.fetchGit { 
+          submodules = true;
+          url = https://gitlab.haskell.org/Haskell-mouse/ghc;
+          rev = "24b37338f8f031074b8d2a8556ea8491794dd243";
+          allRefs = true;
+    })
 
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
@@ -22,14 +28,14 @@
   enableIntegerSimple ? !(lib.meta.availableOn stdenv.hostPlatform gmp), gmp
 
 , # If enabled, use -fPIC when compiling static libs.
-  enableRelocatedStaticLibs ? stdenv.targetPlatform != stdenv.hostPlatform
+  enableRelocatedStaticLibs ? true
 
   # aarch64 outputs otherwise exceed 2GB limit
-, enableProfiledLibs ? !stdenv.targetPlatform.isAarch64
+, enableProfiledLibs ? false
 
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
-  enableShared ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt
+  enableShared ? false
 
 , # Whether to build terminfo.
   enableTerminfo ? !stdenv.targetPlatform.isWindows
@@ -40,14 +46,7 @@
     (if useLLVM then "perf-cross" else "perf-cross-ncg")
 
 , #  Whether to build sphinx documentation.
-  enableDocs ? (
-    # Docs disabled for musl and cross because it's a large task to keep
-    # all `sphinx` dependencies building in those environments.
-    # `sphinx` pulls in among others:
-    # Ruby, Python, Perl, Rust, OpenGL, Xorg, gtk, LLVM.
-    (stdenv.targetPlatform == stdenv.hostPlatform)
-    && !stdenv.hostPlatform.isMusl
-  )
+  enableDocs ? false
 
 , enableHaddockProgram ?
     # Disabled for cross; see note [HADDOCK_DOCS].
@@ -100,10 +99,10 @@ let
     Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
     CrossCompilePrefix = ${targetPrefix}
   '' + lib.optionalString (!enableProfiledLibs) ''
-    GhcLibWays = "v dyn"
+    GhcLibWays = "v"
   '' + lib.optionalString enableRelocatedStaticLibs ''
-    GhcLibHcOpts += -fPIC
-    GhcRtsHcOpts += -fPIC
+    GhcLibHcOpts += -fPIC -fexternal-dynamic-refs
+    GhcRtsHcOpts += -fPIC -fexternal-dynamic-refs
   '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
   '';
@@ -111,7 +110,7 @@ let
   # Splicer will pull out correct variations
   libDeps = platform: lib.optional enableTerminfo ncurses
     ++ [libffi]
-    ++ lib.optional (!enableIntegerSimple) gmp
+    ++ [gmp]
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv;
 
   toolsForTarget = [
@@ -139,10 +138,7 @@ stdenv.mkDerivation (rec {
   version = "8.10.7";
   name = "${targetPrefix}ghc-${version}";
 
-  src = fetchurl {
-    url = "https://downloads.haskell.org/ghc/${version}/ghc-${version}-src.tar.xz";
-    sha256 = "e3eef6229ce9908dfe1ea41436befb0455fefb1932559e860ad4c606b0d03c9d";
-  };
+  src = sources; 
 
   enableParallelBuilding = true;
 
@@ -185,6 +181,7 @@ stdenv.mkDerivation (rec {
     export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
 
     echo -n "${buildMK}" > mk/build.mk
+    ./boot
     sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
   '' + lib.optionalString (!stdenv.isDarwin) ''
     export NIX_LDFLAGS+=" -rpath $out/lib/ghc-${version}"
@@ -224,10 +221,10 @@ stdenv.mkDerivation (rec {
   ] ++ lib.optionals (libffi != null) [
     "--with-system-libffi"
     "--with-ffi-includes=${targetPackages.libffi.dev}/include"
-    "--with-ffi-libraries=${targetPackages.libffi.out}/lib"
+    "--with-ffi-libraries=${(targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; })).out}/lib"
   ] ++ lib.optionals (targetPlatform == hostPlatform && !enableIntegerSimple) [
     "--with-gmp-includes=${targetPackages.gmp.dev}/include"
-    "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
+    "--with-gmp-libraries=${(targetPackages.gmp.override { withStatic = true; }).out}/lib"
   ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
     "--with-iconv-includes=${libiconv}/include"
     "--with-iconv-libraries=${libiconv}/lib"
@@ -316,10 +313,6 @@ stdenv.mkDerivation (rec {
     maintainers = with lib.maintainers; [ marcweber andres peti guibou ];
     timeout = 24 * 3600;
     inherit (ghc.meta) license platforms;
-
-    # integer-simple builds are broken when GHC links against musl.
-    # See https://github.com/NixOS/nixpkgs/pull/129606#issuecomment-881323743.
-    broken = enableIntegerSimple && hostPlatform.isMusl;
   };
 
 } // lib.optionalAttrs targetPlatform.useAndroidPrebuilt {
