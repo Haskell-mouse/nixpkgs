@@ -1,9 +1,15 @@
-{ lib, stdenv, pkgsBuildTarget, targetPackages
+{ lib, stdenv, pkgsBuildTarget, targetPackages, 
 
 # build-tools
 , bootPkgs
 , autoconf, automake, coreutils, fetchpatch, fetchurl, perl, python3, m4, sphinx, xattr
 , bash
+, sources ? (builtins.fetchGit { 
+      submodules = true;
+      url = https://gitlab.haskell.org/Haskell-mouse/ghc;
+      rev = "f7b3359be12030d762b299681e1aeef0292417ce";
+      allRefs = true;
+    })
 
 , libiconv ? null, ncurses
 
@@ -138,10 +144,7 @@ stdenv.mkDerivation (rec {
   version = "8.10.6";
   name = "${targetPrefix}ghc-${version}";
 
-  src = fetchurl {
-    url = "https://downloads.haskell.org/ghc/${version}/ghc-${version}-src.tar.xz";
-    sha256 = "43afba72a533408b42c1492bd047b5e37e5f7204e41a5cedd3182cc841610ce9";
-  };
+  src = sources;
 
   enableParallelBuilding = true;
 
