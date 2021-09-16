@@ -1,4 +1,4 @@
-{ lib, stdenv, pkgsBuildTarget, targetPackages, 
+{ lib, stdenv, pkgsBuildTarget, targetPackages 
 
 # build-tools
 , bootPkgs
