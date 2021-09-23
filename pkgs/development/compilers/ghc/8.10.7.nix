@@ -10,7 +10,7 @@
 , sources ? (builtins.fetchGit { 
           submodules = true;
           url = https://gitlab.haskell.org/Haskell-mouse/ghc;
-          rev = "24b37338f8f031074b8d2a8556ea8491794dd243";
+          rev = "abcafdcb0dcc56cb11dac03f54fda6b0d98156fe";
           allRefs = true;
     })
 
